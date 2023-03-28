@@ -64,11 +64,13 @@ class Sampler:
                 results.append(("default", k, data, metrics))
             return results
 
-    def _get_type(generator) -> ModelType:
-        if callable(generator) and getfullargspec(
-                generator).annotations["return"] == pm.model.Model:
+    def _get_type(self) -> ModelType:
+        if (
+            callable(self)
+            and getfullargspec(self).annotations["return"] == pm.model.Model
+        ):
             return 1
-        if isinstance(generator, infer.hmc.NUTS):
+        if isinstance(self, infer.hmc.NUTS):
             return 2
 
 
@@ -91,15 +93,14 @@ def sampling_pymc(sampler, draws: int, tune: int,
         extra_args['progressbar'] = False
     if 'compute_convergence_checks' in getfullargspec(sampler_pymc).args:
         extra_args['compute_convergence_checks'] = False
-    data = PYMC_SAMPLERS[sampler](
+    return PYMC_SAMPLERS[sampler](
         draws=draws,
         tune=tune,
         chains=chains,
         random_seed=seed,
         **extra_args,
-        idata_kwargs={
-            'log_likelihood': False})
-    return data
+        idata_kwargs={'log_likelihood': False}
+    )
 
 
 @monitor
@@ -111,9 +112,7 @@ def sampling_numpyro(sampler, draws: int, tune: int,
         gpu = True
     except Exception:
         gpu = False
-    chain_method = "parallel"
-    if gpu:
-        chain_method = "vectorized"
+    chain_method = "vectorized" if gpu else "parallel"
     rng_key = random.PRNGKey(0)
     mcmc = infer.MCMC(
         sampler,
@@ -125,5 +124,4 @@ def sampling_numpyro(sampler, draws: int, tune: int,
         rng_key,
         **model_args)
 
-    data = az.from_numpyro(mcmc, log_likelihood=False)
-    return data
+    return az.from_numpyro(mcmc, log_likelihood=False)

@@ -47,7 +47,7 @@ def resample_data(
         return data
     if len(data) > size:
         return data.sample(size)
-    r = int(size / len(data))
+    r = size // len(data)
     extra_rows = pd.concat(
         [data] * (r - 1) + [data.sample(size - r*len(data))],
         ignore_index=True)
